@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/db.js';
 import authRoutes from './routes/auth.routes.js'
+import postRoutes from './routes/post.routes.js'
 
 dotenv.config(); // Load environment variables from .env file
 connectDB(); // Connect to the database
@@ -14,6 +15,7 @@ app.use(express.json()); // Parse JSON request bodies
 
 // ------Routes--------
 app.use('/api/auth', authRoutes);
+app.use('/api/posts', postRoutes)
 
 const PORT = process.env.PORT || 5000; // Use the PORT from environment variables or default to 5000
 
