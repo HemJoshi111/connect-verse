@@ -63,3 +63,82 @@ export const createPost = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// @desc    Get all posts
+// @route   GET /api/posts/all
+// @access  Public (or Private, depending on preference)
+export const getAllPosts = async (req, res) => {
+    try {
+        // 1. Find all posts
+        // 2. .sort({ createdAt: -1 }): Sort by Date. -1 means Descending (Newest first).
+        // 3. .populate(...): Replace the 'user' ID with actual user data (username, img)
+        //    We also populate 'comments.user' to see who commented.
+        const posts = await Post.find()
+            .sort({ createdAt: -1 })
+            .populate({
+                path: 'user',
+                select: '-password' // Don't send the password!
+            })
+            .populate({
+                path: 'comments.user',
+                select: '-password'
+            });
+
+        if (posts.length === 0) {
+            return res.status(200).json([]);
+        }
+
+        res.status(200).json(posts);
+    } catch (error) {
+        console.log('Error in getAllPosts:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Get posts by a specific user
+// @route   GET /api/posts/user/:id
+// @access  Public
+export const getUserPosts = async (req, res) => {
+    try {
+        const posts = await Post.find({ user: req.params.id })
+            .sort({ createdAt: -1 })
+            .populate('user', '-password')
+            .populate('comments.user', '-password');
+
+        res.status(200).json(posts);
+    } catch (error) {
+        console.log('Error in getUserPosts:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Delete a post
+// @route   DELETE /api/posts/:id
+// @access  Private
+export const deletePost = async (req, res) => {
+    try {
+        // 1. Find the post by ID
+        const post = await Post.findById(req.params.id);
+
+        if (!post) {
+            return res.status(404).json({ success: false, message: 'Post not found' });
+        }
+
+        // 2. Check ownership: Is the logged-in user the owner of the post?
+        // Note: post.user is an ObjectId, req.user._id is a String (or ObjectId).
+        // We must convert to strings to compare them accurately.
+        if (post.user.toString() !== req.user._id.toString()) {
+            return res.status(401).json({ success: false, message: 'Not authorized to delete this post' });
+        }
+
+        // 3. Delete from Database
+        // (Optional:  would also delete the image from Cloudinary here)
+        await Post.findByIdAndDelete(req.params.id);
+
+        res.status(200).json({ success: true, message: 'Post deleted successfully' });
+
+    } catch (error) {
+        console.log('Error in deletePost:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
