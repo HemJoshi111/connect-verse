@@ -19,7 +19,7 @@ const Post = ({ post, onDelete }) => {
 
     // 1. Handle Like
     const handleLike = async () => {
-        // Optimistic UI Update (Update instantly before server responds)
+        // Optimistic UI Update
         if (isLiked) {
             setLikes(likes.filter(id => id !== authUser._id));
             setIsLiked(false);
@@ -36,11 +36,9 @@ const Post = ({ post, onDelete }) => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            // Sync with server truth
             setLikes(data);
         } catch (error) {
             toast.error(error.message);
-            // Revert if error (Optional complex logic, skipping for simplicity)
         }
     };
 
@@ -62,8 +60,8 @@ const Post = ({ post, onDelete }) => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            setComments(data); // Update comments list
-            setCommentText(''); // Clear input
+            setComments(data);
+            setCommentText('');
             toast.success('Comment added');
         } catch (error) {
             toast.error(error.message);
@@ -72,7 +70,7 @@ const Post = ({ post, onDelete }) => {
         }
     };
 
-    // 3. Handle Delete (Only if I own the post)
+    // 3. Handle Delete
     const handleDelete = async () => {
         if (!window.confirm("Are you sure you want to delete this post?")) return;
 
@@ -85,7 +83,6 @@ const Post = ({ post, onDelete }) => {
             if (!res.ok) throw new Error(data.message);
 
             toast.success("Post deleted");
-            // Inform parent (HomePage) to remove this post from the list
             if (onDelete) onDelete(post._id);
 
         } catch (error) {
@@ -180,13 +177,23 @@ const Post = ({ post, onDelete }) => {
                         ) : (
                             comments.map((comment, index) => (
                                 <div key={index} className="flex gap-2 items-start">
-                                    {/* Note: In a real app, populate comment.user to get avatar. 
-                                 For now, we just show a generic icon or name if available */}
-                                    <div className="bg-gray-100 rounded-lg p-2 px-3">
-                                        <span className="font-bold text-xs text-gray-900 block mb-1">
-                                            User {comment.user?.username || ''}
-                                        </span>
-                                        <span className="text-sm text-gray-700">{comment.text}</span>
+                                    {/* Commenter Avatar */}
+                                    <Link to={`/profile/${comment.user?._id}`} className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 overflow-hidden">
+                                        {comment.user?.profilePicture ? (
+                                            <img src={comment.user.profilePicture} alt="pic" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-indigo-600 font-bold text-xs">
+                                                {comment.user?.username?.[0]?.toUpperCase()}
+                                            </div>
+                                        )}
+                                    </Link>
+
+                                    {/* Comment Text & Name */}
+                                    <div className="bg-gray-100 rounded-2xl p-2 px-3">
+                                        <Link to={`/profile/${comment.user?._id}`} className="font-bold text-xs text-gray-900 block hover:underline">
+                                            {comment.user?.username}
+                                        </Link>
+                                        <span className="text-sm text-gray-800">{comment.text}</span>
                                     </div>
                                 </div>
                             ))
