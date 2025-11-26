@@ -1,4 +1,5 @@
 import Sidebar from './Sidebar';
+import BottomNav from './BottomNav';
 
 // This component wraps the content of any page
 const PageLayout = ({ children }) => {
@@ -20,6 +21,8 @@ const PageLayout = ({ children }) => {
                     <p className="text-sm text-gray-400">User suggestions coming soon...</p>
                 </div>
             </div>
+
+            <BottomNav />
 
         </div>
     );
