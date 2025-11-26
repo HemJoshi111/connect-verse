@@ -1,5 +1,6 @@
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
+import RightPanel from './RightPanel';
 
 // This component wraps the content of any page
 const PageLayout = ({ children }) => {
@@ -14,14 +15,10 @@ const PageLayout = ({ children }) => {
                 {children}
             </main>
 
-            {/* Right Side: Suggestions (Placeholder for now) */}
-            <div className="hidden lg:block w-80 p-4 border-l border-gray-200">
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                    <h3 className="font-bold text-gray-500 mb-4">Suggested for you</h3>
-                    <p className="text-sm text-gray-400">User suggestions coming soon...</p>
-                </div>
-            </div>
+            {/* Right Side */}
+            <RightPanel />
 
+            {/* { for mobile user show bottom navigation instead of side bar} */}
             <BottomNav />
 
         </div>

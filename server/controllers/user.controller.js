@@ -131,3 +131,23 @@ export const searchUsers = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// @desc    Get my followers and following list
+// @route   GET /api/users/connections
+// @access  Private
+export const getUserConnections = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id)
+            .populate('followers', 'username profilePicture') // Get name and pic only
+            .populate('following', 'username profilePicture');
+
+        res.status(200).json({
+            success: true,
+            followers: user.followers,
+            following: user.following
+        });
+    } catch (error) {
+        console.log('Error in getUserConnections:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
