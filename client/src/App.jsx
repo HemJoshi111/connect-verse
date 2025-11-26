@@ -4,6 +4,7 @@ import SignUpPage from './pages/SignupPage';
 import { useAuthContext } from './context/AuthContext';
 import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
+import SearchPage from './pages/SearchPage';
 
 function App() {
 
@@ -33,6 +34,9 @@ function App() {
           path="/profile/:id"
           element={authUser ? <ProfilePage /> : <Navigate to="/login" />}
         />
+
+        <Route path="/search" element={authUser ? <SearchPage /> : <Navigate to="/login" />} />
+
       </Routes>
     </div>
   );

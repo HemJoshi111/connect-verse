@@ -91,7 +91,7 @@ const ProfilePage = () => {
                 // Update Global Auth Context (My "Following" count went down)
                 const updatedAuthUser = {
                     ...authUser,
-                    following: authUser.following.filter(uid => uid !== id)
+                    following: (authUser.following || []).filter(uid => uid !== id)
                 };
                 setAuthUser(updatedAuthUser);
                 localStorage.setItem('user', JSON.stringify(updatedAuthUser));
@@ -108,7 +108,7 @@ const ProfilePage = () => {
                 // Update Global Auth Context (My "Following" count went up)
                 const updatedAuthUser = {
                     ...authUser,
-                    following: [...authUser.following, id]
+                    following: [...(authUser.following || []), id]
                 };
                 setAuthUser(updatedAuthUser);
                 localStorage.setItem('user', JSON.stringify(updatedAuthUser));

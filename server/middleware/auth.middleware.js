@@ -16,7 +16,7 @@ export const protect = async (req, res, next) => {
 
 
             // decoded will get id of the user, because during jwt.sign, it also encode the id of user
-            let decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+            let decoded = jwt.verify(token, process.env.JWT_SECRET);
 
             // 4. Find the user associated with this token
             req.user = await User.findById(decoded.id).select('-password');

@@ -109,3 +109,25 @@ export const followUnfollowUser = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// @desc    Search for users
+// @route   GET /api/users/search/:query
+// @access  Private
+export const searchUsers = async (req, res) => {
+    try {
+        const { query } = req.params;
+
+        // Use MongoDB Regex to find matching usernames (case-insensitive)
+        // $regex: query -> matches the pattern
+        // $options: 'i' -> ignores case (John = john)
+        const users = await User.find({
+            username: { $regex: query, $options: 'i' },
+            _id: { $ne: req.user._id } // Exclude myself from results
+        }).select('-password');
+
+        res.status(200).json(users);
+    } catch (error) {
+        console.log('Error in searchUsers:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

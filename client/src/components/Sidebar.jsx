@@ -32,10 +32,10 @@ const Sidebar = () => {
                 </Link>
 
                 {/* Search (Coming Soon) */}
-                <div className="flex items-center gap-4 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-all duration-200 cursor-pointer">
+                <Link to="/search" className="flex items-center gap-4 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-all duration-200">
                     <Search size={24} />
                     <span className="font-medium text-lg">Search</span>
-                </div>
+                </Link>
 
                 {/* Create Post (We will connect this later) */}
                 <div className="flex items-center gap-4 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-all duration-200 cursor-pointer">
