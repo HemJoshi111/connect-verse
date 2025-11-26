@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
+import { baseUrl } from '../utils/url';
 
 const RightPanel = () => {
     const [connections, setConnections] = useState({ followers: [], following: [] });
@@ -11,7 +12,7 @@ const RightPanel = () => {
         const fetchConnections = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const res = await fetch('/api/users/connections', {
+                const res = await fetch(`${baseUrl}/users/connections`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 const data = await res.json();

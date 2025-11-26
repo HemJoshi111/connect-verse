@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { baseUrl } from '../utils/url';
 import { Link } from 'react-router-dom';
 import PageLayout from '../components/PageLayout';
 import toast, { Toaster } from 'react-hot-toast';
@@ -13,7 +14,7 @@ const NotificationPage = () => {
         const fetchNotifications = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const res = await fetch('/api/notifications', {
+                const res = await fetch(`${baseUrl}/notifications`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 const data = await res.json();
@@ -33,7 +34,7 @@ const NotificationPage = () => {
         if (!window.confirm("Clear all notifications?")) return;
         try {
             const token = localStorage.getItem('token');
-            await fetch('/api/notifications', {
+            await fetch(`${baseUrl}/notifications`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` },
             });

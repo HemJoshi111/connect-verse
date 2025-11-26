@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { baseUrl } from '../utils/url';
 import { X, Image } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -29,7 +30,7 @@ const CreatePostModal = ({ isOpen, onClose }) => {
             if (img) formData.append('img', img);
 
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/posts/create', {
+            const res = await fetch(`${baseUrl}/posts/create`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData,

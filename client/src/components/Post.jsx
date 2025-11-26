@@ -1,3 +1,4 @@
+import { baseUrl } from '../utils/url';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, MessageCircle, Trash2, Send } from 'lucide-react';
@@ -29,7 +30,7 @@ const Post = ({ post, onDelete }) => {
         }
 
         try {
-            const res = await fetch(`/api/posts/like/${post._id}`, {
+            const res = await fetch(`${baseUrl}/posts/like/${post._id}`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
             });
@@ -49,7 +50,7 @@ const Post = ({ post, onDelete }) => {
         setIsCommenting(true);
 
         try {
-            const res = await fetch(`/api/posts/comment/${post._id}`, {
+            const res = await fetch(`${baseUrl}/posts/comment/${post._id}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -75,7 +76,7 @@ const Post = ({ post, onDelete }) => {
         if (!window.confirm("Are you sure you want to delete this post?")) return;
 
         try {
-            const res = await fetch(`/api/posts/${post._id}`, {
+            const res = await fetch(`${baseUrl}/posts/${post._id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
             });

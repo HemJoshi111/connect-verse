@@ -1,3 +1,4 @@
+import { baseUrl } from '../utils/url';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
@@ -32,7 +33,7 @@ const ProfilePage = () => {
                 const token = localStorage.getItem('token');
 
                 // Fetch User Info
-                const userRes = await fetch(`/api/users/${id}`, {
+                const userRes = await fetch(`${baseUrl}/users/${id}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 const userData = await userRes.json();
@@ -47,7 +48,7 @@ const ProfilePage = () => {
                 setIsFollowing(amIFollowing);
 
                 // Fetch User's Posts
-                const postsRes = await fetch(`/api/posts/user/${id}`, {
+                const postsRes = await fetch(`${baseUrl}/posts/user/${id}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 const postsData = await postsRes.json();
@@ -71,7 +72,7 @@ const ProfilePage = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/users/follow/${id}`, {
+            const res = await fetch(`${baseUrl}/users/follow/${id}`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -141,7 +142,7 @@ const ProfilePage = () => {
             if (editImg) formData.append('profilePicture', editImg);
 
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/users/update', {
+            const res = await fetch(`${baseUrl}/users/update`, {
                 method: 'PUT',
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData,

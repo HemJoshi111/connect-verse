@@ -1,3 +1,4 @@
+import { baseUrl } from '../utils/url';
 import { useEffect, useState } from 'react';
 import { useAuthContext } from '../context/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
@@ -23,7 +24,7 @@ const HomePage = () => {
     const fetchPosts = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/posts/all', {
+            const res = await fetch(`${baseUrl}/posts/all`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             const data = await res.json();
@@ -65,7 +66,7 @@ const HomePage = () => {
             }
 
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/posts/create', {
+            const res = await fetch(`${baseUrl}/posts/create`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { baseUrl } from '../utils/url';
 import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
@@ -22,7 +23,7 @@ const SearchPage = () => {
             setLoading(true);
             try {
                 const token = localStorage.getItem('token');
-                const res = await fetch(`/api/users/search/${query}`, {
+                const res = await fetch(`${baseUrl}/users/search/${query}`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 const data = await res.json();

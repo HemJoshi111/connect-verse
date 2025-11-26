@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { baseUrl } from '../utils/url';
 import { useAuthContext } from '../context/AuthContext';
 import PageLayout from '../components/PageLayout';
 import toast, { Toaster } from 'react-hot-toast';
@@ -24,7 +25,7 @@ const SettingsPage = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/users/account', {
+            const res = await fetch(`${baseUrl}/users/account`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
