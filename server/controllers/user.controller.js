@@ -1,6 +1,7 @@
 import User from '../models/user.model.js';
 import Notification from '../models/notification.model.js';
 import cloudinary from '../config/cloudinary.js';
+import bcrypt from 'bcryptjs';
 
 // @desc    Get user profile by ID
 // @route   GET /api/users/:id
@@ -148,6 +149,76 @@ export const followUnfollowUser = async (req, res) => {
 
     } catch (error) {
         console.log('Error in followUnfollowUser:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Update account settings (Username, Email, Password)
+// @route   PUT /api/users/account
+// @access  Private
+export const updateAccountSettings = async (req, res) => {
+    try {
+        const { username, email, currentPassword, newPassword } = req.body;
+
+        // Get user with password included for checking
+        const user = await User.findById(req.user._id).select('+password');
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // --- 1. Security Check: Password Change ---
+        if (newPassword && currentPassword) {
+            const isMatch = await user.matchPassword(currentPassword);
+            if (!isMatch) {
+                return res.status(400).json({ success: false, message: 'Invalid current password' });
+            }
+            // If match, set new password (pre-save hook in model will hash it)
+            if (newPassword.length < 6) {
+                return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+            }
+            user.password = newPassword;
+        }
+
+        // --- 2. Username Update ---
+        if (username && username !== user.username) {
+            const usernameExists = await User.findOne({ username });
+            if (usernameExists) {
+                return res.status(400).json({ success: false, message: 'Username is already taken' });
+            }
+            user.username = username;
+        }
+
+        // --- 3. Email Update ---
+        if (email && email !== user.email) {
+            const emailExists = await User.findOne({ email });
+            if (emailExists) {
+                return res.status(400).json({ success: false, message: 'Email is already taken' });
+            }
+            user.email = email;
+        }
+
+        // Save changes (triggers validation & password hashing hook)
+        await user.save();
+
+        // Return clean user object (without password)
+        const updatedUser = {
+            _id: user._id,
+            username: user.username,
+            email: user.email,
+            profilePicture: user.profilePicture,
+            followers: user.followers,
+            following: user.following
+        };
+
+        res.status(200).json({
+            success: true,
+            message: 'Account settings updated successfully',
+            data: updatedUser
+        });
+
+    } catch (error) {
+        console.log('Error in updateAccountSettings:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 };

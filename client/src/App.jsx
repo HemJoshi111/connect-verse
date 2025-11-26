@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
 import SearchPage from './pages/SearchPage';
 import NotificationPage from './pages/NotificationPage';
+import SettingsPage from './pages/SettingsPage';
 
 function App() {
 
@@ -39,6 +40,8 @@ function App() {
         <Route path="/search" element={authUser ? <SearchPage /> : <Navigate to="/login" />} />
 
         <Route path="/notifications" element={authUser ? <NotificationPage /> : <Navigate to="/login" />} />
+
+        <Route path="/settings" element={authUser ? <SettingsPage /> : <Navigate to="/login" />} />
 
       </Routes>
     </div>

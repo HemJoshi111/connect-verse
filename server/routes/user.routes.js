@@ -3,7 +3,7 @@ import { protect } from '../middleware/auth.middleware.js';
 import upload from '../middleware/upload.middleware.js';
 import {
     getUserProfile, updateUserProfile, followUnfollowUser, searchUsers,
-    getUserConnections
+    getUserConnections, updateAccountSettings
 } from '../controllers/user.controller.js';
 
 const router = express.Router();
@@ -17,6 +17,8 @@ router.get('/connections', protect, getUserConnections);
 
 // Get any user's profile
 router.get('/:id', protect, getUserProfile);
+
+router.put('/account', protect, updateAccountSettings);
 
 // Update MY profile (Upload image)
 router.put('/update', protect, upload.single('profilePicture'), updateUserProfile);

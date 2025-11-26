@@ -3,17 +3,21 @@ import { useAuthContext } from '../context/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
 import PageLayout from '../components/PageLayout';
 import Post from '../components/Post';
+import PostSkeleton from '../components/skeletons/PostSkeleton'; // <--- Import Skeleton
 import { Image } from 'lucide-react';
 
 const HomePage = () => {
     const { authUser } = useAuthContext();
     const [posts, setPosts] = useState([]);
 
-    // --- Create Post States ---
+    // State for loading the Feed
+    const [isFetching, setIsFetching] = useState(true);
+
+    // State for creating a post
     const [text, setText] = useState('');
     const [img, setImg] = useState(null);
     const [previewImg, setPreviewImg] = useState(null);
-    const [loading, setLoading] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
 
     // 1. Fetch Posts
     const fetchPosts = async () => {
@@ -28,6 +32,8 @@ const HomePage = () => {
         } catch (error) {
             console.log(error);
             toast.error("Failed to load feed");
+        } finally {
+            setIsFetching(false); // Stop loading spinner
         }
     };
 
@@ -47,9 +53,9 @@ const HomePage = () => {
     // 3. Handle Post Submission
     const handlePostSubmit = async (e) => {
         e.preventDefault();
-        if (!text && !img) return; // Prevent empty posts
+        if (!text && !img) return;
 
-        setLoading(true);
+        setIsCreating(true);
 
         try {
             const formData = new FormData();
@@ -71,23 +77,18 @@ const HomePage = () => {
             if (!res.ok) throw new Error(data.message);
 
             toast.success('Post created!');
-
-            // Reset Form
             setText('');
             setImg(null);
             setPreviewImg(null);
-
-            // Refresh Feed
             fetchPosts();
 
         } catch (error) {
             toast.error(error.message);
         } finally {
-            setLoading(false);
+            setIsCreating(false);
         }
     };
 
-    // 4. Handle Delete Post (Callback from Child)
     const handleDeletePost = (id) => {
         setPosts(posts.filter(p => p._id !== id));
     };
@@ -100,7 +101,6 @@ const HomePage = () => {
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6">
                 <form onSubmit={handlePostSubmit}>
                     <div className="flex gap-4">
-                        {/* User Avatar (Small) */}
                         <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                             {authUser?.profilePicture ? (
                                 <img src={authUser.profilePicture} alt="pic" className="w-full h-full object-cover" />
@@ -120,7 +120,6 @@ const HomePage = () => {
                                 rows="2"
                             />
 
-                            {/* Image Preview */}
                             {previewImg && (
                                 <div className="relative mb-4">
                                     <img src={previewImg} alt="Preview" className="w-full h-64 object-cover rounded-lg" />
@@ -150,14 +149,14 @@ const HomePage = () => {
 
                                 <button
                                     type="submit"
-                                    disabled={loading || (!text && !img)}
+                                    disabled={isCreating || (!text && !img)}
                                     className={`px-5 py-2 rounded-full font-bold text-white transition-all 
-                                ${loading || (!text && !img)
+                                ${isCreating || (!text && !img)
                                             ? 'bg-indigo-300 cursor-not-allowed'
                                             : 'bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg'
                                         }`}
                                 >
-                                    {loading ? 'Posting...' : 'Post'}
+                                    {isCreating ? 'Posting...' : 'Post'}
                                 </button>
                             </div>
                         </div>
@@ -165,22 +164,35 @@ const HomePage = () => {
                 </form>
             </div>
 
-            {/* --- Feed Section --- */}
+            {/* --- Feed Section  --- */}
             <div className="space-y-4">
-                {posts.length === 0 ? (
+
+                {/* Scenario 1: Loading -> Show Skeletons */}
+                {isFetching && (
+                    <>
+                        <PostSkeleton />
+                        <PostSkeleton />
+                        <PostSkeleton />
+                    </>
+                )}
+
+                {/* Scenario 2: Not Loading but Empty -> Show Welcome Message */}
+                {!isFetching && posts.length === 0 && (
                     <div className="text-center py-10 bg-white rounded-xl border border-gray-100">
                         <p className="text-xl font-bold text-gray-800 mb-2">Welcome to ConnectVerse! 👋</p>
                         <p className="text-gray-500">Your feed is empty. Start posting or follow users!</p>
                     </div>
-                ) : (
-                    posts.map((post) => (
-                        <Post
-                            key={post._id}
-                            post={post}
-                            onDelete={handleDeletePost}
-                        />
-                    ))
                 )}
+
+                {/* Scenario 3: Loaded and Has Data -> Show Posts */}
+                {!isFetching && posts.map((post) => (
+                    <Post
+                        key={post._id}
+                        post={post}
+                        onDelete={handleDeletePost}
+                    />
+                ))}
+
             </div>
         </PageLayout>
     );
