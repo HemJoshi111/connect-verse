@@ -1,19 +1,24 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom'; // To get ID from URL
+import { useParams } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
 import PageLayout from '../components/PageLayout';
 import toast, { Toaster } from 'react-hot-toast';
-import { Camera, MapPin, Calendar, Edit3 } from 'lucide-react';
+import { Calendar, Edit3, UserPlus, UserCheck } from 'lucide-react';
+import Post from '../components/Post';
 
 const ProfilePage = () => {
-    const { id } = useParams(); // Get user ID from the URL (e.g. /profile/123)
+    const { id } = useParams();
     const { authUser, setAuthUser } = useAuthContext();
 
     const [profile, setProfile] = useState(null);
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // --- Edit Mode States ---
+    // Follow State
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [isUpdatingFollow, setIsUpdatingFollow] = useState(false);
+
+    // Edit Mode States
     const [isEditing, setIsEditing] = useState(false);
     const [editBio, setEditBio] = useState('');
     const [editImg, setEditImg] = useState(null);
@@ -34,7 +39,12 @@ const ProfilePage = () => {
                 if (!userRes.ok) throw new Error(userData.message);
 
                 setProfile(userData.data);
-                setEditBio(userData.data.bio || ''); // Initialize edit bio
+                setEditBio(userData.data.bio || '');
+
+                // Check if I am following this user
+                // We check if MY ID is inside THEIR followers array
+                const amIFollowing = userData.data.followers.includes(authUser._id);
+                setIsFollowing(amIFollowing);
 
                 // Fetch User's Posts
                 const postsRes = await fetch(`/api/posts/user/${id}`, {
@@ -52,9 +62,66 @@ const ProfilePage = () => {
         };
 
         fetchData();
-    }, [id]);
+    }, [id, authUser._id]);
 
-    // 2. Handle Image Selection
+    // 2. Handle Follow / Unfollow
+    const handleFollow = async () => {
+        if (isUpdatingFollow) return; // Prevent double clicking
+        setIsUpdatingFollow(true);
+
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/users/follow/${id}`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+
+            // Optimistic UI Update
+            if (isFollowing) {
+                toast.success("Unfollowed");
+                setIsFollowing(false);
+                // Decrease follower count visually
+                setProfile(prev => ({
+                    ...prev,
+                    followers: prev.followers.filter(uid => uid !== authUser._id)
+                }));
+
+                // Update Global Auth Context (My "Following" count went down)
+                const updatedAuthUser = {
+                    ...authUser,
+                    following: authUser.following.filter(uid => uid !== id)
+                };
+                setAuthUser(updatedAuthUser);
+                localStorage.setItem('user', JSON.stringify(updatedAuthUser));
+
+            } else {
+                toast.success("Followed!");
+                setIsFollowing(true);
+                // Increase follower count visually
+                setProfile(prev => ({
+                    ...prev,
+                    followers: [...prev.followers, authUser._id]
+                }));
+
+                // Update Global Auth Context (My "Following" count went up)
+                const updatedAuthUser = {
+                    ...authUser,
+                    following: [...authUser.following, id]
+                };
+                setAuthUser(updatedAuthUser);
+                localStorage.setItem('user', JSON.stringify(updatedAuthUser));
+            }
+
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setIsUpdatingFollow(false);
+        }
+    };
+
+    // 3. Handle Image Selection
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -63,7 +130,7 @@ const ProfilePage = () => {
         }
     };
 
-    // 3. Handle Update Submit
+    // 4. Handle Profile Update
     const handleUpdate = async (e) => {
         e.preventDefault();
         setUpdating(true);
@@ -84,12 +151,9 @@ const ProfilePage = () => {
             if (!res.ok) throw new Error(data.message);
 
             toast.success('Profile updated!');
-
-            // Update local state
             setProfile(data.data);
             setIsEditing(false);
 
-            // IMPORTANT: If we updated OUR OWN profile, update the Global Context too
             if (authUser._id === data.data._id) {
                 setAuthUser(data.data);
                 localStorage.setItem('user', JSON.stringify(data.data));
@@ -102,10 +166,9 @@ const ProfilePage = () => {
         }
     };
 
-    if (loading) return <PageLayout><div className="text-center mt-10">Loading...</div></PageLayout>;
+    if (loading) return <PageLayout><div className="flex justify-center mt-10"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div></div></PageLayout>;
     if (!profile) return <PageLayout><div className="text-center mt-10">User not found</div></PageLayout>;
 
-    // Check if this is MY profile
     const isMyProfile = authUser?._id === profile._id;
 
     return (
@@ -114,13 +177,10 @@ const ProfilePage = () => {
 
             {/* --- Profile Header --- */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-
-                {/* Banner (Simple Color for now) */}
                 <div className="h-32 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
 
                 <div className="px-6 pb-6">
                     <div className="flex justify-between items-end -mt-12 mb-4">
-                        {/* Avatar */}
                         <div className="relative">
                             <div className="w-24 h-24 rounded-full border-4 border-white bg-gray-200 overflow-hidden">
                                 {profile.profilePicture ? (
@@ -133,8 +193,8 @@ const ProfilePage = () => {
                             </div>
                         </div>
 
-                        {/* Edit Button (Only visible if it's My Profile) */}
-                        {isMyProfile && (
+                        {/* --- Action Buttons --- */}
+                        {isMyProfile ? (
                             <button
                                 onClick={() => setIsEditing(!isEditing)}
                                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full font-medium transition-colors flex items-center gap-2"
@@ -142,10 +202,22 @@ const ProfilePage = () => {
                                 <Edit3 size={16} />
                                 {isEditing ? 'Cancel' : 'Edit Profile'}
                             </button>
+                        ) : (
+                            <button
+                                onClick={handleFollow}
+                                disabled={isUpdatingFollow}
+                                className={`px-6 py-2 rounded-full font-bold text-white transition-all flex items-center gap-2
+                            ${isFollowing
+                                        ? 'bg-gray-800 hover:bg-gray-900'
+                                        : 'bg-indigo-600 hover:bg-indigo-700'
+                                    }`}
+                            >
+                                {isFollowing ? <UserCheck size={18} /> : <UserPlus size={18} />}
+                                {isFollowing ? 'Unfollow' : 'Follow'}
+                            </button>
                         )}
                     </div>
 
-                    {/* User Info */}
                     <h1 className="text-2xl font-bold text-gray-900">{profile.username}</h1>
                     <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
                         <span>@{profile.email.split('@')[0]}</span>
@@ -157,7 +229,6 @@ const ProfilePage = () => {
                         {profile.bio || "No bio yet."}
                     </p>
 
-                    {/* Stats */}
                     <div className="flex gap-6 mt-6 border-t border-gray-100 pt-4">
                         <div><span className="font-bold text-gray-900">{posts.length}</span> <span className="text-gray-500">Posts</span></div>
                         <div><span className="font-bold text-gray-900">{profile.followers?.length || 0}</span> <span className="text-gray-500">Followers</span></div>
@@ -166,7 +237,7 @@ const ProfilePage = () => {
                 </div>
             </div>
 
-            {/* --- Edit Form (Visible only when Editing) --- */}
+            {/* --- Edit Form --- */}
             {isEditing && (
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6 animate-fade-in">
                     <h3 className="font-bold text-lg mb-4">Edit Profile</h3>
@@ -178,7 +249,6 @@ const ProfilePage = () => {
                                 <input type="file" onChange={handleImageChange} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
                             </div>
                         </div>
-
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
                             <textarea
@@ -189,7 +259,6 @@ const ProfilePage = () => {
                                 placeholder="Tell us about yourself..."
                             />
                         </div>
-
                         <div className="flex justify-end gap-3">
                             <button
                                 type="submit"
@@ -205,18 +274,12 @@ const ProfilePage = () => {
 
             {/* --- User Posts Grid --- */}
             <h3 className="font-bold text-xl mb-4 text-gray-800">Posts</h3>
-            <div className="grid grid-cols-1 gap-6">
+            <div className="space-y-4">
                 {posts.length === 0 ? (
-                    <p className="text-gray-500 text-center py-10 bg-white rounded-xl">Has not posted anything yet.</p>
+                    <p className="text-gray-500 text-center py-10 bg-white rounded-xl border border-gray-200">Has not posted anything yet.</p>
                 ) : (
                     posts.map((post) => (
-                        <div key={post._id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                            <p className="mb-3 text-gray-800">{post.text}</p>
-                            {post.img && (
-                                <img src={post.img} alt="Post" className="w-full h-auto rounded-lg object-cover" />
-                            )}
-                            <p className="text-xs text-gray-400 mt-2">{new Date(post.createdAt).toLocaleDateString()}</p>
-                        </div>
+                        <Post key={post._id} post={post} />
                     ))
                 )}
             </div>
