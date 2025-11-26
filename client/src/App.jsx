@@ -5,6 +5,7 @@ import { useAuthContext } from './context/AuthContext';
 import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
 import SearchPage from './pages/SearchPage';
+import NotificationPage from './pages/NotificationPage';
 
 function App() {
 
@@ -36,6 +37,8 @@ function App() {
         />
 
         <Route path="/search" element={authUser ? <SearchPage /> : <Navigate to="/login" />} />
+
+        <Route path="/notifications" element={authUser ? <NotificationPage /> : <Navigate to="/login" />} />
 
       </Routes>
     </div>
