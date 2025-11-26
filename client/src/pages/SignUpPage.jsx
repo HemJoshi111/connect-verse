@@ -3,16 +3,16 @@ import { Link } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import { useAuthContext } from '../context/AuthContext';
 import { baseUrl } from '../utils/url';
-import { User, Mail, Lock, Upload, Image as ImageIcon } from 'lucide-react';
+import { User, Mail, Lock, Upload, Image as ImageIcon, Type } from 'lucide-react'; // Imported Type icon
 
 const SignUpPage = () => {
     const [formData, setFormData] = useState({
+        fullName: '',
         username: '',
         email: '',
         password: '',
     });
 
-    // New State for Profile Picture
     const [profilePic, setProfilePic] = useState(null);
     const [previewImg, setPreviewImg] = useState(null);
 
@@ -36,8 +36,8 @@ const SignUpPage = () => {
         setLoading(true);
 
         try {
-            // Use FormData to handle text + file
             const dataPayload = new FormData();
+            dataPayload.append('fullName', formData.fullName);
             dataPayload.append('username', formData.username);
             dataPayload.append('email', formData.email);
             dataPayload.append('password', formData.password);
@@ -47,7 +47,6 @@ const SignUpPage = () => {
 
             const res = await fetch(`${baseUrl}/auth/register`, {
                 method: 'POST',
-                // Do NOT set Content-Type header when sending FormData
                 body: dataPayload,
             });
 
@@ -86,6 +85,25 @@ const SignUpPage = () => {
             <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-100">
                     <form className="space-y-6" onSubmit={handleSubmit}>
+
+                        {/* Full Name Input */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                            <div className="mt-1 relative rounded-md shadow-sm">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Type className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <input
+                                    type="text"
+                                    name="fullName"
+                                    required
+                                    value={formData.fullName}
+                                    onChange={handleChange}
+                                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    placeholder="John Doe"
+                                />
+                            </div>
+                        </div>
 
                         {/* Username */}
                         <div>

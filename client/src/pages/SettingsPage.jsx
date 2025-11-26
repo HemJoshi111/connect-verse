@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { baseUrl } from '../utils/url';
 import { useAuthContext } from '../context/AuthContext';
 import PageLayout from '../components/PageLayout';
 import toast, { Toaster } from 'react-hot-toast';
+import { baseUrl } from '../utils/url';
 
 const SettingsPage = () => {
     const { authUser, setAuthUser } = useAuthContext();
@@ -25,6 +25,7 @@ const SettingsPage = () => {
 
         try {
             const token = localStorage.getItem('token');
+            // 2. Use baseUrl
             const res = await fetch(`${baseUrl}/users/account`, {
                 method: 'PUT',
                 headers: {
@@ -39,11 +40,9 @@ const SettingsPage = () => {
 
             toast.success('Settings updated successfully!');
 
-            // Update Global State & Local Storage
             setAuthUser(data.data);
             localStorage.setItem('user', JSON.stringify(data.data));
 
-            // Clear password fields for security
             setFormData(prev => ({ ...prev, currentPassword: '', newPassword: '' }));
 
         } catch (error) {
@@ -61,7 +60,6 @@ const SettingsPage = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-6">
 
-                    {/* Section 1: Basic Info */}
                     <div>
                         <h3 className="text-lg font-semibold text-gray-700 mb-4">Personal Information</h3>
                         <div className="grid gap-4">
@@ -88,7 +86,6 @@ const SettingsPage = () => {
                         </div>
                     </div>
 
-                    {/* Section 2: Security */}
                     <div>
                         <h3 className="text-lg font-semibold text-gray-700 mb-4 pt-4 border-t">Change Password</h3>
                         <div className="grid gap-4">
@@ -117,7 +114,6 @@ const SettingsPage = () => {
                         </div>
                     </div>
 
-                    {/* Actions */}
                     <div className="pt-4 border-t flex justify-end">
                         <button
                             type="submit"

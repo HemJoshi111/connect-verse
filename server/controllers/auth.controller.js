@@ -14,10 +14,11 @@ const generateToken = (id) => {
 // @access  Public
 export const registerUser = async (req, res) => {
     try {
-        const { username, email, password } = req.body;
+
+        const { fullName, username, email, password } = req.body;
         let profilePicture = '';
 
-        if (!username || !email || !password) {
+        if (!fullName || !username || !email || !password) {
             return res.status(400).json({ success: false, message: 'Please add all fields' });
         }
 
@@ -26,7 +27,6 @@ export const registerUser = async (req, res) => {
             return res.status(400).json({ success: false, message: 'User already exists' });
         }
 
-        // --- Handle Profile Picture Upload ---
         if (req.file) {
             const uploadToCloudinary = () => {
                 return new Promise((resolve, reject) => {
@@ -45,16 +45,19 @@ export const registerUser = async (req, res) => {
             profilePicture = result.secure_url;
         }
 
+        // 3. Create user with fullName
         const user = await User.create({
+            fullName,
             username,
             email,
             password,
-            profilePicture, // Save the URL
+            profilePicture,
         });
 
         if (user) {
             const userData = {
                 _id: user._id,
+                fullName: user.fullName,
                 username: user.username,
                 email: user.email,
                 profilePicture: user.profilePicture,
@@ -74,22 +77,20 @@ export const registerUser = async (req, res) => {
     }
 };
 
-// @desc    Authenticate a user (Login)
-// @route   POST /api/auth/login
-// @access  Public
+
 export const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
-
         const user = await User.findOne({ email }).select('+password');
 
         if (user && (await user.matchPassword(password))) {
             const userData = {
                 _id: user._id,
+                fullName: user.fullName,
                 username: user.username,
                 email: user.email,
                 profilePicture: user.profilePicture,
-                following: user.following, // Add these to keep context updated
+                following: user.following,
                 followers: user.followers
             };
 
@@ -107,22 +108,13 @@ export const loginUser = async (req, res) => {
     }
 };
 
-// @desc    Get user data (Profile)
-// @route   GET /api/auth/me
-// @access  Private
 export const getMe = async (req, res) => {
     try {
         const user = req.user;
+
         res.status(200).json({
             success: true,
-            data: {
-                _id: user._id,
-                username: user.username,
-                email: user.email,
-                profilePicture: user.profilePicture,
-                following: user.following,
-                followers: user.followers
-            }
+            data: user // Just return the whole user object (minus password)
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

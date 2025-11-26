@@ -1,4 +1,3 @@
-import { baseUrl } from '../utils/url';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
@@ -6,6 +5,7 @@ import PageLayout from '../components/PageLayout';
 import toast, { Toaster } from 'react-hot-toast';
 import { Calendar, Edit3, UserPlus, UserCheck } from 'lucide-react';
 import Post from '../components/Post';
+import { baseUrl } from '../utils/url';
 
 const ProfilePage = () => {
     const { id } = useParams();
@@ -15,24 +15,22 @@ const ProfilePage = () => {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Follow State
     const [isFollowing, setIsFollowing] = useState(false);
     const [isUpdatingFollow, setIsUpdatingFollow] = useState(false);
 
-    // Edit Mode States
     const [isEditing, setIsEditing] = useState(false);
     const [editBio, setEditBio] = useState('');
+    const [editFullName, setEditFullName] = useState('');
     const [editImg, setEditImg] = useState(null);
     const [previewImg, setPreviewImg] = useState(null);
     const [updating, setUpdating] = useState(false);
 
-    // 1. Fetch Profile & Posts
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const token = localStorage.getItem('token');
 
-                // Fetch User Info
+                // 2. Use baseUrl
                 const userRes = await fetch(`${baseUrl}/users/${id}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -41,13 +39,12 @@ const ProfilePage = () => {
 
                 setProfile(userData.data);
                 setEditBio(userData.data.bio || '');
+                setEditFullName(userData.data.fullName || ''); // Initialize name
 
-                // Check if I am following this user
-                // We check if MY ID is inside THEIR followers array
                 const amIFollowing = userData.data.followers.includes(authUser._id);
                 setIsFollowing(amIFollowing);
 
-                // Fetch User's Posts
+                // 2. Use baseUrl
                 const postsRes = await fetch(`${baseUrl}/posts/user/${id}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -65,13 +62,13 @@ const ProfilePage = () => {
         fetchData();
     }, [id, authUser._id]);
 
-    // 2. Handle Follow / Unfollow
     const handleFollow = async () => {
-        if (isUpdatingFollow) return; // Prevent double clicking
+        if (isUpdatingFollow) return;
         setIsUpdatingFollow(true);
 
         try {
             const token = localStorage.getItem('token');
+            // 2. Use baseUrl
             const res = await fetch(`${baseUrl}/users/follow/${id}`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` }
@@ -79,17 +76,13 @@ const ProfilePage = () => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            // Optimistic UI Update
             if (isFollowing) {
                 toast.success("Unfollowed");
                 setIsFollowing(false);
-                // Decrease follower count visually
                 setProfile(prev => ({
                     ...prev,
                     followers: prev.followers.filter(uid => uid !== authUser._id)
                 }));
-
-                // Update Global Auth Context (My "Following" count went down)
                 const updatedAuthUser = {
                     ...authUser,
                     following: (authUser.following || []).filter(uid => uid !== id)
@@ -100,13 +93,10 @@ const ProfilePage = () => {
             } else {
                 toast.success("Followed!");
                 setIsFollowing(true);
-                // Increase follower count visually
                 setProfile(prev => ({
                     ...prev,
                     followers: [...prev.followers, authUser._id]
                 }));
-
-                // Update Global Auth Context (My "Following" count went up)
                 const updatedAuthUser = {
                     ...authUser,
                     following: [...(authUser.following || []), id]
@@ -122,7 +112,6 @@ const ProfilePage = () => {
         }
     };
 
-    // 3. Handle Image Selection
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -131,7 +120,6 @@ const ProfilePage = () => {
         }
     };
 
-    // 4. Handle Profile Update
     const handleUpdate = async (e) => {
         e.preventDefault();
         setUpdating(true);
@@ -139,9 +127,11 @@ const ProfilePage = () => {
         try {
             const formData = new FormData();
             formData.append('bio', editBio);
+            formData.append('fullName', editFullName); // <--- Send Full Name
             if (editImg) formData.append('profilePicture', editImg);
 
             const token = localStorage.getItem('token');
+            // 2. Use baseUrl
             const res = await fetch(`${baseUrl}/users/update`, {
                 method: 'PUT',
                 headers: { Authorization: `Bearer ${token}` },
@@ -176,7 +166,6 @@ const ProfilePage = () => {
         <PageLayout>
             <Toaster />
 
-            {/* --- Profile Header --- */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
                 <div className="h-32 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
 
@@ -194,7 +183,6 @@ const ProfilePage = () => {
                             </div>
                         </div>
 
-                        {/* --- Action Buttons --- */}
                         {isMyProfile ? (
                             <button
                                 onClick={() => setIsEditing(!isEditing)}
@@ -219,9 +207,10 @@ const ProfilePage = () => {
                         )}
                     </div>
 
-                    <h1 className="text-2xl font-bold text-gray-900">{profile.username}</h1>
+                    {/* 3. Display Full Name and Username */}
+                    <h1 className="text-2xl font-bold text-gray-900">{profile.fullName || profile.username}</h1>
                     <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
-                        <span>@{profile.email.split('@')[0]}</span>
+                        <span>@{profile.username}</span>
                         <span>•</span>
                         <span className="flex items-center gap-1"><Calendar size={14} /> Joined {new Date(profile.createdAt).toLocaleDateString()}</span>
                     </div>
@@ -238,7 +227,6 @@ const ProfilePage = () => {
                 </div>
             </div>
 
-            {/* --- Edit Form --- */}
             {isEditing && (
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6 animate-fade-in">
                     <h3 className="font-bold text-lg mb-4">Edit Profile</h3>
@@ -249,6 +237,17 @@ const ProfilePage = () => {
                                 {previewImg && <img src={previewImg} className="w-12 h-12 rounded-full object-cover" alt="Preview" />}
                                 <input type="file" onChange={handleImageChange} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
                             </div>
+                        </div>
+                        {/* 3. Full Name Input */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                            <input
+                                type="text"
+                                value={editFullName}
+                                onChange={(e) => setEditFullName(e.target.value)}
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                placeholder="John Doe"
+                            />
                         </div>
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
@@ -273,7 +272,6 @@ const ProfilePage = () => {
                 </div>
             )}
 
-            {/* --- User Posts Grid --- */}
             <h3 className="font-bold text-xl mb-4 text-gray-800">Posts</h3>
             <div className="space-y-4">
                 {posts.length === 0 ? (

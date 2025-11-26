@@ -1,65 +1,66 @@
-import mongoose, { Schema } from "mongoose";
-import bcrypt from "bcryptjs";
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
-const userSchema = new Schema(
+const userSchema = new mongoose.Schema(
     {
+        fullName: {
+            type: String,
+            required: [true, 'Please add your full name'],
+            trim: true,
+            maxlength: 50,
+        },
         username: {
             type: String,
-            required: [true, "Username is required"],
+            required: [true, 'Please add a username'],
             unique: true,
             trim: true,
         },
         email: {
             type: String,
-            required: [true, "Email is required"],
+            required: [true, 'Please add an email'],
             unique: true,
-            trim: true,
             match: [
                 /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
-                "Please enter a valid email",
+                'Please add a valid email',
             ],
         },
         password: {
             type: String,
-            required: [true, "Password is required"],
+            required: [true, 'Please add a password'],
             minlength: 6,
-            select: false, // IMPORTANT: When we query for a user, don't return the password by default
+            select: false,
         },
         profilePicture: {
             type: String,
-            default: "", // We will store the URL from Cloudinary here later
+            default: '',
         },
         bio: {
             type: String,
-            default: "",
+            default: '',
             maxlength: 150,
         },
-        followers: [{ type: Schema.Types.ObjectId, ref: "User" }],
-        following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+        followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+        following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     },
-    { timestamps: true }// Automatically creates 'createdAt' and 'updatedAt' fields
+    {
+        timestamps: true,
+    }
 );
 
-// --- Middleware: Encrypt password using bcrypt before saving ---
-
-userSchema.pre("save", async function (req, res, next) {
+// Encrypt password using bcrypt
+userSchema.pre('save', async function (next) {
     if (!this.isModified('password')) {
         next();
     }
-
     const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+});
 
-    // Hash the password with the salt
-    this.password = await bcrypt.hash(this.password, salt)
-})
-
-// --- Method: Compare entered password with hashed password ---
-
+// Match user entered password to hashed password in database
 userSchema.methods.matchPassword = async function (enteredPassword) {
-
     return await bcrypt.compare(enteredPassword, this.password);
-}
+};
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model('User', userSchema);
 
 export default User;

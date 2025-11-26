@@ -1,26 +1,22 @@
-import { baseUrl } from '../utils/url';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, MessageCircle, Trash2, Send } from 'lucide-react';
 import { useAuthContext } from '../context/AuthContext';
+import { baseUrl } from '../utils/url';
 import toast from 'react-hot-toast';
 
 const Post = ({ post, onDelete }) => {
     const { authUser } = useAuthContext();
 
-    // Local State for instant UI updates
     const [likes, setLikes] = useState(post.likes);
     const [isLiked, setIsLiked] = useState(post.likes.includes(authUser?._id));
     const [comments, setComments] = useState(post.comments);
 
-    // Comment Input State
     const [showComments, setShowComments] = useState(false);
     const [commentText, setCommentText] = useState('');
     const [isCommenting, setIsCommenting] = useState(false);
 
-    // 1. Handle Like
     const handleLike = async () => {
-        // Optimistic UI Update
         if (isLiked) {
             setLikes(likes.filter(id => id !== authUser._id));
             setIsLiked(false);
@@ -30,6 +26,7 @@ const Post = ({ post, onDelete }) => {
         }
 
         try {
+            // 2. Use baseUrl
             const res = await fetch(`${baseUrl}/posts/like/${post._id}`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
@@ -43,13 +40,13 @@ const Post = ({ post, onDelete }) => {
         }
     };
 
-    // 2. Handle Comment
     const handleComment = async (e) => {
         e.preventDefault();
         if (!commentText.trim()) return;
         setIsCommenting(true);
 
         try {
+            // 2. Use baseUrl
             const res = await fetch(`${baseUrl}/posts/comment/${post._id}`, {
                 method: 'POST',
                 headers: {
@@ -71,11 +68,11 @@ const Post = ({ post, onDelete }) => {
         }
     };
 
-    // 3. Handle Delete
     const handleDelete = async () => {
         if (!window.confirm("Are you sure you want to delete this post?")) return;
 
         try {
+            // 2. Use baseUrl
             const res = await fetch(`${baseUrl}/posts/${post._id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
@@ -95,7 +92,6 @@ const Post = ({ post, onDelete }) => {
 
     return (
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-4">
-            {/* Header */}
             <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
                     <Link to={`/profile/${post.user._id}`} className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
@@ -107,11 +103,12 @@ const Post = ({ post, onDelete }) => {
                         }
                     </Link>
                     <div>
-                        <Link to={`/profile/${post.user._id}`} className="font-bold text-gray-900 hover:underline">
-                            {post.user.username}
+                        {/* 3. Show Full Name and Username */}
+                        <Link to={`/profile/${post.user._id}`} className="font-bold text-gray-900 hover:underline block">
+                            {post.user.fullName || post.user.username}
                         </Link>
                         <div className="text-xs text-gray-500">
-                            {new Date(post.createdAt).toLocaleDateString()}
+                            @{post.user.username} • {new Date(post.createdAt).toLocaleDateString()}
                         </div>
                     </div>
                 </div>
@@ -123,7 +120,6 @@ const Post = ({ post, onDelete }) => {
                 )}
             </div>
 
-            {/* Content */}
             <p className="text-gray-800 mb-3 whitespace-pre-wrap">{post.text}</p>
             {post.img && (
                 <div className="rounded-xl overflow-hidden border border-gray-100 mb-3">
@@ -131,7 +127,6 @@ const Post = ({ post, onDelete }) => {
                 </div>
             )}
 
-            {/* Action Buttons */}
             <div className="flex items-center gap-6 pt-3 border-t border-gray-50">
                 <button
                     onClick={handleLike}
@@ -150,10 +145,8 @@ const Post = ({ post, onDelete }) => {
                 </button>
             </div>
 
-            {/* Comments Section */}
             {showComments && (
                 <div className="mt-4 pt-4 border-t border-gray-50 animate-fade-in">
-                    {/* Input */}
                     <form onSubmit={handleComment} className="flex gap-2 mb-4">
                         <input
                             type="text"
@@ -171,14 +164,12 @@ const Post = ({ post, onDelete }) => {
                         </button>
                     </form>
 
-                    {/* List */}
                     <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
                         {comments.length === 0 ? (
                             <p className="text-center text-sm text-gray-400">No comments yet.</p>
                         ) : (
                             comments.map((comment, index) => (
                                 <div key={index} className="flex gap-2 items-start">
-                                    {/* Commenter Avatar */}
                                     <Link to={`/profile/${comment.user?._id}`} className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 overflow-hidden">
                                         {comment.user?.profilePicture ? (
                                             <img src={comment.user.profilePicture} alt="pic" className="w-full h-full object-cover" />
@@ -189,10 +180,10 @@ const Post = ({ post, onDelete }) => {
                                         )}
                                     </Link>
 
-                                    {/* Comment Text & Name */}
                                     <div className="bg-gray-100 rounded-2xl p-2 px-3">
+                                        {/* 3. Show Full Name in Comments */}
                                         <Link to={`/profile/${comment.user?._id}`} className="font-bold text-xs text-gray-900 block hover:underline">
-                                            {comment.user?.username}
+                                            {comment.user?.fullName || comment.user?.username}
                                         </Link>
                                         <span className="text-sm text-gray-800">{comment.text}</span>
                                     </div>

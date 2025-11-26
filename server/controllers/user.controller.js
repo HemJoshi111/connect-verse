@@ -1,7 +1,6 @@
 import User from '../models/user.model.js';
 import Notification from '../models/notification.model.js';
 import cloudinary from '../config/cloudinary.js';
-import bcrypt from 'bcryptjs';
 
 // @desc    Get user profile by ID
 // @route   GET /api/users/:id
@@ -20,12 +19,13 @@ export const getUserProfile = async (req, res) => {
     }
 };
 
-// @desc    Update user profile (Bio + Profile Picture)
+// @desc    Update user profile (Bio + Profile Picture + Full Name)
 // @route   PUT /api/users/update
 // @access  Private
 export const updateUserProfile = async (req, res) => {
     try {
-        const { bio } = req.body;
+        // 1. Accept fullName from body
+        const { bio, fullName } = req.body;
         let profilePicture = req.user.profilePicture;
 
         if (req.file) {
@@ -50,6 +50,7 @@ export const updateUserProfile = async (req, res) => {
             req.user._id,
             {
                 bio: bio || req.user.bio,
+                fullName: fullName || req.user.fullName, // <--- Added: Update Full Name
                 profilePicture
             },
             { new: true, runValidators: true }
@@ -90,9 +91,10 @@ export const searchUsers = async (req, res) => {
 // @access  Private
 export const getUserConnections = async (req, res) => {
     try {
+        // We populate fullName here too so we can show it in the Right Panel list later
         const user = await User.findById(req.user._id)
-            .populate('followers', 'username profilePicture')
-            .populate('following', 'username profilePicture');
+            .populate('followers', 'username fullName profilePicture')
+            .populate('following', 'username fullName profilePicture');
 
         res.status(200).json({
             success: true,
@@ -135,14 +137,12 @@ export const followUnfollowUser = async (req, res) => {
             await User.findByIdAndUpdate(req.user._id, { $push: { following: id } });
             await User.findByIdAndUpdate(id, { $push: { followers: req.user._id } });
 
-            // --- NOTIFICATION LOGIC START ---
             const newNotification = new Notification({
                 type: 'follow',
                 from: req.user._id,
                 to: id,
             });
             await newNotification.save();
-            // --- NOTIFICATION LOGIC END ---
 
             res.status(200).json({ success: true, message: 'User followed successfully' });
         }
@@ -160,27 +160,23 @@ export const updateAccountSettings = async (req, res) => {
     try {
         const { username, email, currentPassword, newPassword } = req.body;
 
-        // Get user with password included for checking
         const user = await User.findById(req.user._id).select('+password');
 
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        // --- 1. Security Check: Password Change ---
         if (newPassword && currentPassword) {
             const isMatch = await user.matchPassword(currentPassword);
             if (!isMatch) {
                 return res.status(400).json({ success: false, message: 'Invalid current password' });
             }
-            // If match, set new password (pre-save hook in model will hash it)
             if (newPassword.length < 6) {
                 return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
             }
             user.password = newPassword;
         }
 
-        // --- 2. Username Update ---
         if (username && username !== user.username) {
             const usernameExists = await User.findOne({ username });
             if (usernameExists) {
@@ -189,7 +185,6 @@ export const updateAccountSettings = async (req, res) => {
             user.username = username;
         }
 
-        // --- 3. Email Update ---
         if (email && email !== user.email) {
             const emailExists = await User.findOne({ email });
             if (emailExists) {
@@ -198,12 +193,11 @@ export const updateAccountSettings = async (req, res) => {
             user.email = email;
         }
 
-        // Save changes (triggers validation & password hashing hook)
         await user.save();
 
-        // Return clean user object (without password)
         const updatedUser = {
             _id: user._id,
+            fullName: user.fullName, // <--- Make sure to return fullName here too
             username: user.username,
             email: user.email,
             profilePicture: user.profilePicture,
