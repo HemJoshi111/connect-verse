@@ -5,7 +5,9 @@ import {
     createPost,
     getAllPosts,
     getUserPosts,
-    deletePost
+    deletePost,
+    likeUnlikePost,
+    commentOnPost
 } from '../controllers/post.controller.js';
 
 const router = express.Router();
@@ -22,5 +24,8 @@ router.get('/all', protect, getAllPosts);
 
 router.get('/user/:id', protect, getUserPosts); // Get specific user's posts
 router.delete('/:id', protect, deletePost);     // Delete a post by ID
+
+router.post('/like/:id', protect, likeUnlikePost);
+router.post('/comment/:id', protect, commentOnPost);
 
 export default router;

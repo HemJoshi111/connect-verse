@@ -142,3 +142,77 @@ export const deletePost = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// @desc    Like or Unlike a post
+// @route   POST /api/posts/like/:id
+// @access  Private
+export const likeUnlikePost = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user._id;
+
+        const post = await Post.findById(id);
+
+        if (!post) {
+            return res.status(404).json({ success: false, message: 'Post not found' });
+        }
+
+        // Check if user already liked the post
+        const isLiked = post.likes.includes(userId);
+
+        if (isLiked) {
+            // Unlike: Remove userId from likes array
+            // $pull is a MongoDB operator to remove items from an array
+            await Post.updateOne({ _id: id }, { $pull: { likes: userId } });
+
+            // We return the updated list of likes to the frontend
+            const updatedLikes = post.likes.filter((id) => id.toString() !== userId.toString());
+            res.status(200).json(updatedLikes);
+        } else {
+            // Like: Push userId to likes array
+            post.likes.push(userId);
+            await post.save();
+
+            // Send notification (TODO: Feature for later)
+
+            res.status(200).json(post.likes);
+        }
+    } catch (error) {
+        console.log('Error in likeUnlikePost:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Comment on a post
+// @route   POST /api/posts/comment/:id
+// @access  Private
+export const commentOnPost = async (req, res) => {
+    try {
+        const { text } = req.body;
+        const postId = req.params.id;
+        const userId = req.user._id;
+
+        if (!text) {
+            return res.status(400).json({ success: false, message: 'Text is required' });
+        }
+
+        const post = await Post.findById(postId);
+
+        if (!post) {
+            return res.status(404).json({ success: false, message: 'Post not found' });
+        }
+
+        const comment = {
+            user: userId,
+            text,
+        };
+
+        post.comments.push(comment);
+        await post.save();
+
+        res.status(200).json(post.comments); // Return updated comments
+    } catch (error) {
+        console.log('Error in commentOnPost:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
